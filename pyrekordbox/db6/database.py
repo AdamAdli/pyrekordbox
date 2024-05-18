@@ -465,23 +465,27 @@ class Rekordbox6Database:
         """Flushes the buffer of the SQLAlchemy session instance."""
         self.session.flush()
 
-    def commit(self, autoinc=True):
+    def commit(self, autoinc=True, disable_check=False):
         """Commit the changes made to the database.
 
         Parameters
         ----------
         autoinc : bool, optional
-            If True, auto-increment the local and row USN's before commiting the
+            If True, auto-increment the local and row USNs before committing the
             changes made to the database.
+        disable_check : bool, optional
+            If True, disables the check for the existence of playlists in the
+            masterPlaylists6.xml file. This is useful for bypassing errors when
+            manually added playlists are not found in the XML file.
 
         See Also
         --------
-        autoincrement_usn : Auto-increments the local Rekordbox USN's.
+        autoincrement_usn : Auto-increments the local Rekordbox USNs.
         """
         pid = get_rekordbox_pid()
         if pid:
             raise RuntimeError(
-                "Rekordbox is running. Please close Rekordbox before commiting changes."
+                "Rekordbox is running. Please close Rekordbox before committing changes."
             )
         if autoinc:
             self.registry.autoincrement_local_update_count(set_row_usn=True)
@@ -494,16 +498,20 @@ class Rekordbox6Database:
             for pl in self.get_playlist():
                 plxml = self.playlist_xml.get(pl.ID)
                 if plxml is None:
-                    raise ValueError(
-                        f"Playlist {pl.ID} not found in masterPlaylists6.xml! "
-                        "Did you add it manually? "
-                        "Use the create_playlist method instead."
-                    )
-                ts = plxml["Timestamp"]
-                diff = pl.updated_at - ts
-                if abs(diff.total_seconds()) > 1:
-                    logger.debug("Updating updated_at of playlist %s in XML", pl.ID)
-                    self.playlist_xml.update(pl.ID, updated_at=pl.updated_at)
+                    if disable_check:
+                        logger.warning(f"Playlist {pl.Name} ({pl.ID}) not found in masterPlaylists6.xml! ")
+                    else:
+                        raise ValueError(
+                            f"Playlist {pl.ID} not found in masterPlaylists6.xml! "
+                            "Did you add it manually? "
+                            "Use the create_playlist method instead."
+                        )
+                else:
+                    ts = plxml["Timestamp"]
+                    diff = pl.updated_at - ts
+                    if abs(diff.total_seconds()) > 1:
+                        logger.debug("Updating updated_at of playlist %s in XML", pl.ID)
+                        self.playlist_xml.update(pl.ID, updated_at=pl.updated_at)
 
             # Save the XML file if it was modified
             if self.playlist_xml.modified:

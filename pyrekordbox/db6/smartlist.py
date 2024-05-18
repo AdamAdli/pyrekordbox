@@ -197,12 +197,39 @@ class Condition:
 
 def left_bitshift(x: int, nbit: int = 32) -> int:
     """Left shifts an N bit integer with sign change."""
-    return x - 2**nbit
+    return x - 2 ** nbit
 
 
 def right_bitshift(x: int, nbit: int = 32) -> int:
     """Right shifts an N bit integer with sign change."""
-    return x + 2**nbit
+    return x + 2 ** nbit
+
+
+def write_id_shift_function(x: int) -> int:
+    """Applies left bitshift repeatedly until the integer is within 32-bit signed integer range."""
+    while x > 2147483647:
+        x = left_bitshift(x)
+    return x
+
+
+def read_id_shift_function(x: int) -> int:
+    """Applies right bitshift to the integer."""
+    return right_bitshift(x, 33)
+
+
+def read_playlist_id_shift_function(x: int) -> int:
+    """Applies right bitshift repeatedly until the integer is within 32-bit signed integer range."""
+    while x < 2147483647:
+        x = right_bitshift(x)
+    return x
+
+
+def read_mytag_id_shift_function(x: int) -> int:
+    """Applies right bitshift repeatedly until the integer is within 64-bit signed integer range."""
+    while x < (2 * 2147483647):
+        x = right_bitshift(x)
+
+    return x
 
 
 def _get_condition_values(cond):
@@ -233,7 +260,7 @@ class SmartList:
     """Rekordbox smart playlist XML handler."""
 
     def __init__(
-        self, logical_operator: int = LogicalOperator.ALL, auto_update: int = 0
+            self, logical_operator: int = LogicalOperator.ALL, auto_update: int = 0
     ):
         self.playlist_id: Union[int, str] = ""
         self.logical_operator: int = int(logical_operator)
@@ -255,7 +282,9 @@ class SmartList:
             )
             conditions.append(condition)
 
-        self.playlist_id = str(right_bitshift(int(root.attrib["Id"])))
+        # self.playlist_id = str(right_bitshift(int(root.attrib["Id"])))
+        # self.playlist_id = str(read_playlist_id_shift_function(int(root.attrib["Id"])))
+        self.playlist_id = str(int(root.attrib["Id"]))
         self.logical_operator = int(root.attrib["LogicalOperator"])
         self.auto_update = int(root.attrib["AutomaticUpdate"])
         self.conditions = conditions
@@ -263,7 +292,9 @@ class SmartList:
     def to_xml(self) -> str:
         """Convert the smart playlist conditions to XML."""
         attrib = {
-            "Id": str(left_bitshift(int(self.playlist_id))),
+            # "Id": str(left_bitshift(int(self.playlist_id))),
+            # "Id": str(write_id_shift_function(int(self.playlist_id))),
+            "Id": str(self.playlist_id),
             "LogicalOperator": str(self.logical_operator),
             "AutomaticUpdate": str(self.auto_update),
         }
@@ -280,12 +311,12 @@ class SmartList:
         return xml.tostring(root).decode("utf-8").replace(" /", "/")
 
     def add_condition(
-        self,
-        prop: str,
-        operator: int,
-        value_left: str,
-        value_right: str = "",
-        unit: str = "",
+            self,
+            prop: str,
+            operator: int,
+            value_left: str,
+            value_right: str = "",
+            unit: str = "",
     ) -> None:
         """Add a condition to the smart playlist.
 
@@ -302,8 +333,12 @@ class SmartList:
         unit : str, optional
             The unit to use, by default "".
         """
+        if prop == Property.MYTAG:
+            value_left = write_id_shift_function(int(value_left))
+
         if isinstance(prop, Property):
             prop = str(prop.value)
+
         cond = Condition(prop, int(operator), unit, value_left, value_right)
         self.conditions.append(cond)
 
@@ -323,8 +358,9 @@ class SmartList:
 
             if cond.property in PROPERTY_COLUMN_MAP:
                 colum_name = PROPERTY_COLUMN_MAP[cond.property]
+
                 if cond.property == Property.MYTAG:
-                    val_left = str(right_bitshift(int(val_left)))
+                    val_left = str(read_id_shift_function(int(val_left)))
 
                 if cond.operator == Operator.EQUAL:
                     comp = getattr(DjmdContent, colum_name) == val_left

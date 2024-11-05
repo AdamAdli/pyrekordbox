@@ -1,3 +1,16 @@
+# pyrekordbox-fork
+
+This is a maintained fork of [pyrekordbox](https://github.com/dylanljones/pyrekordbox), which hasn't been updated since January 2024.
+
+
+## Why this fork?
+
+- Original project is unmaintained
+- Modern packaging with PDM
+- Additional features and improvements
+- Active maintenance and bug fixes
+
+---
 
 <p align="center">
 <img src="https://raw.githubusercontent.com/dylanljones/pyrekordbox/master/docs/source/_static/logos/light/logo_primary.svg" alt="logo" height="70"/>

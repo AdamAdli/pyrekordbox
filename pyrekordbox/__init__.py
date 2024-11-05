@@ -17,6 +17,9 @@ from .mysettings import (
 from .rbxml import RekordboxXml, XmlAttributeKeyError, XmlDuplicateError
 
 try:
-    from ._version import version as __version__
+    from ._version import __version__, version
 except ImportError:  # pragma: no cover
     __version__ = "unknown"
+    version = "unknown"
+
+__all__ = ["__version__", "version"]

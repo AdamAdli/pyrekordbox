@@ -1,5 +1,18 @@
 # What's New
 
+## [0.4.0] - 2024-03-05
+
+This is a fork of [pyrekordbox](https://github.com/dylanljones/pyrekordbox) which was unmaintained since v0.3.2.
+
+### Changes from original
+- Migrated to PDM for modern Python packaging
+- Added upper bounds to dependencies
+- Improved development tooling and CI
+- Added comprehensive testing setup
+- Merged a bunch of pull requests from original.
+
+# Original Changelog
+
 <a name="unreleased"></a>
 ## [Unreleased]
 

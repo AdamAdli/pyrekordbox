@@ -1,9 +1,5 @@
-# This workflow will run the tests of the project
+name: Tests 
 
-name: Tests
-
-
-# Controls when the action will run.
 on:
   push:
     branches: ["*"]
@@ -11,9 +7,7 @@ on:
     types: [opened]
   workflow_dispatch:
 
-
 jobs:
-
   code-change:
     runs-on: ubuntu-latest
     steps:
@@ -35,43 +29,44 @@ jobs:
     outputs:
       should_skip: ${{ steps.skip_check.outputs.should_skip }}
 
-
   tests:
     needs: code-change
     if: ${{ needs.code-change.outputs.should_skip != 'true'}}
 
     strategy:
       matrix:
-        os: [windows-latest, macos-latest]
+        os: [windows-latest, macos-latest, ubuntu-latest]
         python-version: ["3.8", "3.12"]  # check oldest and latest supported version
-        other-os: [true]
 
     runs-on: ${{ matrix.os }}
-    continue-on-error: false  # don't cancel due to OS specific failures
+    continue-on-error: false
     env:
       OS: ${{ matrix.os }}
       PYTHON: ${{ matrix.python-version }}
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         fetch-depth: 0
 
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
-        cache: "pip" # caching pip dependencies
+        cache: "pip" 
 
-    - name: Build and install
+    - name: Install PDM
       run: |
         python -m pip install --upgrade pip
-        pip install setuptools
-        pip install .[test]
+        pip install pdm
 
+    - name: Install dependencies
+      run: |
+        pdm install --group :all
+        
     - name: Run tests
       run: |
-        pytest tests/ --cov=pyrekordbox --cov-report=xml -v
+        pdm run test-cov
 
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v3
